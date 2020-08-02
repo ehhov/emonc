@@ -26,9 +26,6 @@ internal=eDP-1
 rotmonitor=DP-1
 rotdirection=left
 
-# Default command what waits for output change events (-l option).
-waitcommand=waitmonc
-
 # You may want to restart a compositor. Options can be specified after a space. 
 compositor=''
 
@@ -49,7 +46,7 @@ configurespecial() {
 ###########################
 
 usage() {
-	echo "Usage: emonc [-l] [-c command] [-d above|below|left|right] [-i internal] [-k compositor]"
+	echo "Usage: emonc [-l] [-c compositor] [-d above|below|left|right] [-i internal]"
 	echo "             [-o outputs] [-r rotationrules] [-s special] [-f configurespecial]"
 	echo "             [auto|primary|onlyprimary|largest|onlylargest|from output|only output]"
 	echo "       emonc rot [normal|left|right|inverted] [output]"
@@ -292,12 +289,11 @@ while [ $# -gt 0 ]; do
 		;;
 		esac
 	;;
-	-c|-i|-k|-o|-r|-s|-f)
+	-c|-i|-o|-r|-s|-f)
 		if [ $# -gt 1 ]; then
 			case $1 in
-			-c) waitcommand="$2";;
+			-c) compositor="$2";;
 			-i) internal="$2";;
-			-k) compositor="$2";;
 			-o) outputs="$2";;
 			-r) rotationrules="$2";;
 			-s) special="$2";;
@@ -312,7 +308,7 @@ while [ $# -gt 0 ]; do
 	d*)
 		outputs=$(getoutputs $outputs)
 		for i in action direction outputs rotationrules internal\
-		         rotmonitor rotdirection waitcommand compositor special
+		         rotmonitor rotdirection compositor special
 		do
 			echo -n "$i="
 			eval echo "\"\${$i:-''}\""
@@ -385,7 +381,7 @@ setprimary)
 	fi
 ;;
 *)
-	for pid in $(pgrep -x emonc); do
+	for pid in $(pgrep -x emonc) $(pgrep -x waitmonc); do
 		if [ $pid -ne $$ ]; then
 			echo "Terminated $pid: '$(ps -p $pid -o 'cmd=')'." >&2
 			kill $pid
@@ -393,7 +389,7 @@ setprimary)
 	done
 	allmons $action
 	if [ "$loop" ]; then
-		while $waitcommand; do
+		while waitmonc; do
 			allmons $action
 		done
 	fi

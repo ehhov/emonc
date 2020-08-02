@@ -5,13 +5,11 @@ emonc \- monitor connection and configuration helper
 .B emonc
 .RB [ \-l ]
 .RB [ \-c
-.IR command ]
+.IR compositor ]
 .RB [ \-d
 above|below|left|right]
 .RB [ \-i
 .IR internal ]
-.RB [ \-k
-.IR compositor ]
 .RB [ \-o
 .IR outputs ]
 .RB [ \-r
@@ -49,9 +47,9 @@ Otherwise, a recursive reconfiguration may happen.
 run in a loop waiting for output change events (monitor connection or 
 manual reconfiguration).
 .TP
-.BI \-c " command"
-set a command to run in the while loop condition (see the \fB\-l\fR option). 
-It should wait for output change events and then exit successfully.
+.BI \-c " compositor"
+specify a program to restart each time after applying configuration rules. Its 
+options can be specified after a space (within the same command line argument).
 .TP
 .BI \-d " direction"
 set a monitor alignment direction. The \fIdirection\fR can be either above, 
@@ -61,10 +59,6 @@ enough.
 .BI \-i " internal"
 set a fallback primary monitor (used when a primary monitor is not found). It 
 is considered to be always connected.
-.TP
-.BI \-k " compositor"
-specify a program to restart each time after applying configuration rules. Its 
-options can be specified after a space (within the same command line argument).
 .TP
 .BI \-o " outputs"
 specify regular monitors. Useful when you are not satisfied with their default 
@@ -149,9 +143,7 @@ rotmonitor    \-  monitor to rotate (\fBrot\fR command);
 .br
 rotdirection  \-  rotation direction (\fBrot\fR command);
 .br
-waitcommand   \-  command that waits for output change events (\fB\-c\fR option);
-.br
-compositor    \-  program to restart after configuration (\fB\-k\fR option);
+compositor    \-  program to restart after configuration (\fB\-c\fR option);
 .br
 special       \-  special monitors (\fB\-s\fR option);
 .br
