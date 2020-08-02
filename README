@@ -1,0 +1,40 @@
+emonc - monitor connection and configuration helper
+===================================================
+
+emonc is a simple monitor connection and configuration helper 
+implemented as a shell script. It obtains a list of monitors and 
+performs a set of actions depending on the specified configuration.
+
+It can
+ - set the auto mode for all monitors and align them in one direction,
+ - find the largest (by resolution) monitor and project it to all other 
+   monitors or turn them off,
+ - do the same using the primary monitor instead of the largest,
+ - do the same using a specific monitor.
+It can also wait for output change events (using the waitmonc program) 
+and reconfigure monitors automatically. Output change events are, for 
+example, monitor connection and disconnection and manual configuration 
+(including setting a primary monitor).
+
+Configuration rules include
+ - monitor alignment direction and order,
+ - per-monitor custom rotation rules,
+ - user-defined configuration for specific monitors (which are not 
+   affected by the global configuration after that).
+You can specify everything using command line options, but it's easier 
+to edit the emonc script and set defaults fitting your needs.
+
+emonc can also be used to rotate monitors and set a primary monitor.
+
+
+Dependencies
+------------
+To use emonc, only xrandr and sed are needed. To compile the waitmonc 
+program, the Xlib and Xrandr libraries are needed.
+
+
+Installation
+------------
+Edit the first lines of Makefile to fit your system and run
+
+    make install

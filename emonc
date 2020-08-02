@@ -1,0 +1,401 @@
+#!/bin/sh
+
+#####################
+### Configuration ###
+#####################
+
+# On Fedora, xrandr options have only one dash for some reason.
+dash=--
+
+# Default command.
+action=largest
+
+# Default placement direction and order. Has to be fully typed (above, below, 
+# left-of, right-of).
+direction=below
+outputs=''
+
+# Default rotation rules for monitors. The format is 'eDP-1:normal DP-1:left'. 
+rotationrules=''
+
+# Fallback primary monitor (considered to be always connected).
+internal=eDP-1
+
+# Default rotation direction and monitor (rot command). The direction has to be 
+# fully typed (normal, left, right, inverted).
+rotmonitor=DP-1
+rotdirection=left
+
+# Default command what waits for output change events (-l option).
+waitcommand=waitmonc
+
+# You may want to restart a compositor. Options can be specified after a space. 
+compositor=''
+
+# Special rules. The format is 'eDP-1 DP-1 ...'. Global rules are not applied 
+# to monitors listed in special; you should configure them in configurespecial. 
+# This function will be executed each time before regular configuration. Other 
+# monitors are attached to the last special. Even special monitors are turned 
+# off if disconnected.
+special=''
+configurespecial() {
+	# Note that empty functions are not allowed. Use a no-op (:) for that.
+	:
+}
+
+
+###########################
+### Program realization ###
+###########################
+
+usage() {
+	echo "Usage: emonc [-l] [-c command] [-d above|below|left|right] [-i internal] [-k compositor]"
+	echo "             [-o outputs] [-r rotationrules] [-s special] [-f configurespecial]"
+	echo "             [auto|primary|onlyprimary|largest|onlylargest|from output|only output]"
+	echo "       emonc rot [normal|left|right|inverted] [output]"
+	echo "       emonc unrot [output]"
+	echo "       emonc setprimary [output]"
+	echo "       emonc [defaults] [-h|help]"
+}
+
+# Helper functions and variables.
+getmode() {
+	xrandr -q | sed -nE '/^'"$* conn"'/{:x;n;/conn/q;/\*/!{bx};s/^ *([^ ]{1,}).*/\1/p;q}'
+}
+
+getprimary() {
+	xrandr -q | sed -nE '/primary/{s/^([^ ]{1,}).*/\1/p;q}'
+}
+
+getlargest() {
+	local res=$(xrandr -q | sed -nE '/^'"$* conn"'/{n;s/^ *([^ ]{1,}).*/\1/p;q}')
+	if [ "$res" ]; then
+		echo $((${res#*x} * ${res%x*}))
+	else
+		echo 0
+	fi
+}
+
+getoutputs() {
+	local ret
+	if [ -z "$*" ]; then
+		for i in $(xrandr -q | sed -nE 's/^([^ ]{1,}) (|dis)conn.*/\1/p'); do
+			case " $special " in
+			*" $i "*) ;;
+			*) ret="$ret $i";;
+			esac
+		done
+	else
+		for i in "$@"; do
+			case " $special " in
+			*" $i "*) ;;
+			*) ret="$ret $i";;
+			esac
+		done
+	fi
+	echo $ret
+}
+
+isconn() {
+	[ "$(xrandr -q | sed -n '/^'"$* conn"'/{p;q}')" ]
+}
+
+exists() {
+	[ "$(xrandr -q | sed -nE '/^'"$* (|dis)conn"'/{p;q}')" ]
+}
+
+# Real actions.
+normalize() {
+	xrandr ${dash}output $* ${dash}auto ${dash}transform none
+	applyrotrules $1
+}
+
+applyrotrules() {
+	local rot
+	case " $rotationrules" in
+	*" $*:"*)
+		rot=${rotationrules##* $1:}
+		case ${rot%% *} in
+		n*) rot=normal;;
+		l*) rot=left;;
+		r*) rot=right;;
+		i*) rot=inverted;;
+		*) echo "Unknown rotation direction ${rot%% *}" >&2; return 1;;
+		esac
+		xrandr ${dash}output $* ${dash}rotate $rot
+	;;
+	*);;
+	esac
+}
+
+allmonsfrom() {
+	local mode i
+	mode=$(getmode $*)
+	for i in $outputs; do
+		if ! isconn $i || [ $i = $* ]; then continue; fi
+		xrandr ${dash}output $i ${dash}auto ${dash}same-as $*
+		# FIXME: It stopped working within a single xrandr call somehow.
+		xrandr ${dash}output $i ${dash}scale-from $mode
+		applyrotrules $i
+	done
+}
+
+onlymon() {
+	local i
+	for i in $outputs; do
+		if [ $i = $* ]; then continue; fi
+		xrandr ${dash}output $i ${dash}off
+	done
+}
+
+allmons() {
+	local max tmp mon i oldi
+	if [ "$special" ]; then
+		configurespecial
+	fi
+	case $1 in
+	*largest)
+		max=0; mon=''
+		for i in $outputs; do
+			tmp=$(getlargest $i)
+			if [ $max -lt $tmp ]; then
+				max=$tmp
+				mon=$i
+			fi
+		done
+		if [ "$mon" ]; then
+			normalize $mon ${lastmon:+${dash}${direction} $lastmon}
+			case " $special " in
+			*" $(getprimary) "*) ;;
+			*) xrandr ${dash}output $mon ${dash}primary;;
+			esac
+			case $1 in
+			only*) onlymon $mon;;
+			*) allmonsfrom $mon;;
+			esac
+		fi
+	;;
+	*primary)
+		mon=$(getprimary)
+		if ! isconn "$mon"; then
+			echo "Primary monitor not connected. Trying '$internal'" >&2
+			mon=$internal
+		fi
+		if [ "$mon" ]; then
+			case " $special " in
+			*" $mon "*) ;;
+			*) normalize $mon ${lastmon:+${dash}${direction} $lastmon}
+			esac
+			case $1 in
+			only*) onlymon $mon;;
+			*) allmonsfrom $mon;;
+			esac
+		fi
+	;;
+	only|from)
+		mon=$2
+		if ! isconn "$mon"; then
+			echo "Monitor '$mon' not connected." >&2
+			mon=''
+		fi
+		if [ "$mon" ]; then
+			case " $special " in
+			*" $mon "*) ;;
+			*) normalize $mon ${lastmon:+${dash}${direction} $lastmon}
+			esac
+			case " $special " in
+			*" $(getprimary) "*) ;;
+			*) xrandr ${dash}output $mon ${dash}primary;;
+			esac
+			case $1 in
+			only*) onlymon $mon;;
+			*) allmonsfrom $mon;;
+			esac
+		fi
+	;;
+	*)
+		oldi=$lastmon
+		for i in $outputs; do
+			normalize $i ${oldi:+${dash}${direction} $oldi}
+			oldi=$i
+		done
+	;;
+	esac
+	for i in $outputs $special; do
+		if ! isconn $i; then
+			xrandr ${dash}output $i ${dash}off
+		fi
+	done
+	if [ "${compositor%% *}" ]; then
+		if killall ${compositor%% *}; then
+			sleep .5 # give it some time to finish. Unfortunately, there is no way to wait.
+			nohup $compositor >/dev/null 2>&1 &
+		fi
+	fi
+}
+
+
+##############
+### 'main' ###
+##############
+loop=''
+mon=''
+while [ $# -gt 0 ]; do
+	arg="$1"; opt=''
+	case $1 in
+	r*)
+		action=rot
+		case $2 in
+		no*) shift; rotdirection=normal;;
+		le*) shift; rotdirection=left;;
+		ri*) shift; rotdirection=right;;
+		in*) shift; rotdirection=inverted;;
+		esac
+		mon=${2:-$rotmonitor}
+		if [ $# -gt 1 ]; then shift; fi
+		if [ -z "$mon" ]; then
+			echo "Default monitor to rotate not specified." >&2
+			exit 1
+		fi
+		if ! isconn $mon; then
+			echo "Monitor '$mon' not connected." >&2
+			exit 1
+		fi
+	;;
+	a*)        action=auto;;
+	p*)        action=primary;;
+	op|onlyp*) action=onlyprimary;;
+	l*)        action=largest;;
+	ol|onlyl*) action=onlylargest;;
+	u*|s*|f*|o*)
+		mon=$2
+		case $1 in
+		u*) action=unrot;;
+		s*) action=setprimary;;
+		f*) action="from $mon";;
+		o*) action="only $mon";;
+		esac
+		if [ $# -gt 1 ]; then shift; fi
+	;;
+	-l)
+		loop=1
+	;;
+	-d)
+		case $2 in
+		a*) shift; direction=above;;
+		b*) shift; direction=below;;
+		r*) shift; direction=right-of;;
+		l*) shift; direction=left-of;;
+		*)
+			echo "Unknown direction '$2'." >&2
+			exit 1
+		;;
+		esac
+	;;
+	-c|-i|-k|-o|-r|-s|-f)
+		if [ $# -gt 1 ]; then
+			case $1 in
+			-c) waitcommand="$2";;
+			-i) internal="$2";;
+			-k) compositor="$2";;
+			-o) outputs="$2";;
+			-r) rotationrules="$2";;
+			-s) special="$2";;
+			-f) i=${2%;}; eval "configurespecial() { ${i:-:}; }";;
+			esac
+			shift
+		else
+			echo "$1 option needs an argument." >&2
+			exit 1
+		fi
+	;;
+	d*)
+		outputs=$(getoutputs $outputs)
+		for i in action direction outputs rotationrules internal\
+		         rotmonitor rotdirection waitcommand compositor special
+		do
+			echo -n "$i="
+			eval echo "\"\${$i:-''}\""
+		done | column -t -s '=' -o '  =  '
+		if type typeset >/dev/null 2>&1; then
+			typeset -f configurespecial
+		fi
+		exit 0
+	;;
+	-h|help)
+		usage
+		exit 0
+	;;
+	*)
+		echo "Unknown argument '$1'." >&2
+		usage >&2
+		exit 1
+	;;
+	esac
+	shift
+done
+
+if [ "$internal" ] && ! isconn $internal; then
+	echo "Monitor '$internal' not connected. Fallback primary monitor is unset." >&2
+	internal=''
+fi
+for i in $special $outputs; do
+	if ! exists $i; then
+		echo "Invalid monitor name: '$i' does not exist." >&2
+		exit 1
+	fi
+done
+special=$(echo $special | sed 's/ {2,}/ /')
+lastmon=${special##* }
+outputs=$(getoutputs $outputs)
+
+case $action in
+rot)
+	xrandr ${dash}output $mon ${dash}rotate $rotdirection
+;;
+unrot)
+	if [ "$mon" ]; then
+		xrandr ${dash}output $mon ${dash}rotate normal
+	else
+		for i in $outputs; do
+			xrandr ${dash}output $i ${dash}rotate normal
+		done
+	fi
+;;
+setprimary)
+	fallback=''
+	if [ "$mon" ]; then
+		fallback=$(getprimary)
+		xrandr ${dash}output $mon ${dash}primary
+		if [ "$(getprimary)" ]; then
+			exit 0
+		fi
+	fi
+	if [ "$fallback" ] || [ "$internal" ]; then
+		xrandr ${dash}output ${fallback:-$internal} ${dash}primary
+	else
+		for i in $outputs $special; do
+			if isconn $i; then
+				fallback=$i
+				break;
+			fi
+		done
+		echo "No fallback primary monitor found. Using '$fallback'." >&2
+		xrandr ${dash}output $fallback ${dash}primary
+	fi
+;;
+*)
+	for pid in $(pgrep -x emonc); do
+		if [ $pid -ne $$ ]; then
+			echo "Terminated $pid: '$(ps -p $pid -o 'cmd=')'." >&2
+			kill $pid
+		fi
+	done
+	allmons $action
+	if [ "$loop" ]; then
+		while $waitcommand; do
+			allmons $action
+		done
+	fi
+;;
+esac

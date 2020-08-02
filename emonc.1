@@ -1,0 +1,167 @@
+.TH EMONC 1 "August 2020" "version 0"
+.SH NAME
+emonc \- monitor connection and configuration helper
+.SH SYNOPSIS
+.B emonc
+.RB [ \-l ]
+.RB [ \-c
+.IR command ]
+.RB [ \-d
+above|below|left|right]
+.RB [ \-i
+.IR internal ]
+.RB [ \-k
+.IR compositor ]
+.RB [ \-o
+.IR outputs ]
+.RB [ \-r
+.IR rotationrules ]
+.RB [ \-s
+.IR special ]
+.RB [ \-f
+.IR configurespecial ]
+[auto|primary|onlyprimary|largest|onlylargest|from \fIoutput\fR|only \fIoutput\fR]
+.P
+.B emonc
+rot [normal|left|right|inverted]
+.RI [ output ]
+.P
+.B emonc
+unrot [\fIoutput\fR]
+.P
+.B emonc
+setprimary [\fIoutput\fR]
+.P
+.B emonc
+[defaults] [\fB\-h\fR|help]
+.SH DESCRIPTION
+.B emonc
+is a monitor connection and configuration helper. It provides a set of command 
+line options to specify configuration rules, but it's easier to edit the 
+\fBemonc\fR script and set defaults fitting your needs.
+.P
+\fBemonc\fR will terminate all other \fBemonc\fR processes if the requested 
+command is one of auto, primary, onlyprimary, largest, onlylargest, from, only. 
+Otherwise, a recursive reconfiguration may happen.
+.SH OPTIONS
+.TP
+.B \-l
+run in a loop waiting for output change events (monitor connection or 
+manual reconfiguration).
+.TP
+.BI \-c " command"
+set a command to run in the while loop condition (see the \fB\-l\fR option). 
+It should wait for output change events and then exit successfully.
+.TP
+.BI \-d " direction"
+set a monitor alignment direction. The \fIdirection\fR can be either above, 
+below, left, or right; you don't have to type full words, the first letter is 
+enough.
+.TP
+.BI \-i " internal"
+set a fallback primary monitor (used when a primary monitor is not found). It 
+is considered to be always connected.
+.TP
+.BI \-k " compositor"
+specify a program to restart each time after applying configuration rules. Its 
+options can be specified after a space (within the same command line argument).
+.TP
+.BI \-o " outputs"
+specify regular monitors. Useful when you are not satisfied with their default 
+order.
+.TP
+.BI \-r " rotationrules"
+set custom rotation rules. It's recommended to use it only with the \fBauto\fR 
+mode. The format is \'eDP\-1:normal DP\-1:left ...\'. It is enough to specify the 
+first letter of rotation direction. The rotation state of monitors not 
+contained in this variable is not changed.
+.TP
+.BI \-s " special"
+specify special monitors. Special monitors are not configured automatically 
+(use the \fB\-f\fR option). If the primary monitor is special, only the user 
+can change it explicitly specifying a monitor name. Regular monitors are 
+attached to the last special.
+.TP
+.BI \-f " configurespecial"
+set a command to configure special monitors. It is executed each time before 
+regular configuration. Keep in mind that even special monitors are turned off 
+if not connected.
+.TP
+.B auto
+set the auto mode for all monitors. All monitors are aligned in the same 
+direction in the order specified by the \'outputs\' variable. In this mode, the 
+primary monitor never changes. It is enough to type \fBa\fR for this command.
+.TP
+.BR primary ", " onlyprimary
+copy the contents of the primary monitor to all other monitors or turn them 
+off. In these modes, the primary monitor never changes. It is enough to type 
+\fBp\fR for \fBprimary\fR and \fBop\fR or \fBonlyp\fR for \fBonlyprimary\fR.
+.TP
+.BR largest ", " onlylargest
+copy the contents of the largest (by resolution) monitor to all other monitors 
+or turn them off. The largest monitor becomes primary. It is enough to type 
+\fBl\fR for \fBlargest\fR and \fBol\fR or \fBonlyl\fR for \fBonlylargest\fR.
+.TP
+.BI from " output"
+copy the contents of \fIoutput\fR to all other monitors. \fIoutput\fR has to be 
+connected and becomes primary. It it enough to type \fBf\fR for this command.
+.TP
+.BI only " output"
+turn off all monitors except \fIoutput\fR. \fIoutput\fR has to be connected and 
+becomes primary. It it enough to type \fBo\fR for this command.
+.TP
+\fBrot\fR [\fIdirection\fR] [\fIoutput\fR]
+rotate the monitor \fIoutput\fR in the direction \fIdirection\fR. The 
+\fIdirection\fR can be either normal, left, right, or inverted; you don't 
+have to type full words, first two letters are enough. \fIoutput\fR has to be 
+connected. Default values for \fIdirection\fR and \fIoutput\fR are hard-coded in 
+\fBemonc\fR and can be changed by editing it. It is enough to type \fBr\fR for 
+this command.
+.TP
+\fBunrot\fR [\fIoutput\fR]
+set the normal rotation state for all monitors or \fIoutput\fR if specified. It is 
+enough to type \fBu\fR for this command.
+.TP
+\fBsetprimary\fR [\fIoutput\fR]
+set \fIoutput\fR as primary. If it is not valid and there was a primary 
+monitor, it is set again. If \fIoutput\fR is not specified or there was no 
+primary monitor, the fallback monitor is used. If there is no fallback monitor, 
+the first found connected monitor is set as primary and a log message is 
+printed. So after this command there will definitely be a primary monitor. It 
+is enough to type \fBs\fR for this command.
+.TP
+.B defaults
+show the default configuration. If your \'/bin/sh\' has a \'typeset\' command, 
+it will also show the contents of the function configuring special monitors. 
+The variables are:
+.br
+action        \-  default command;
+.br
+direction     \-  monitor alignment direction (\fB\-d\fR option);
+.br
+outputs       \-  regular monitors and their alignment order (\fB\-o\fR option);
+.br
+rotationrules \-  rotation rules (\fB\-r\fR option);
+.br
+internal      \-  fallback primary monitor (\fB\-i\fR option);
+.br
+rotmonitor    \-  monitor to rotate (\fBrot\fR command);
+.br
+rotdirection  \-  rotation direction (\fBrot\fR command);
+.br
+waitcommand   \-  command that waits for output change events (\fB\-c\fR option);
+.br
+compositor    \-  program to restart after configuration (\fB\-k\fR option);
+.br
+special       \-  special monitors (\fB\-s\fR option);
+.br
+configurespecial \- the function configuring special monitors (\fB\-f\fR option).
+.br
+It is enough to type \fBd\fR for this command.
+.TP
+.BR \-h | help
+print a small help message.
+.SH AUTHOR
+Written by Kerim Guseynov
+.P
+The project is located at https://github.com/ehhov/emonc
