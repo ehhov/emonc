@@ -26,7 +26,7 @@ main(int argc, char **argv)
 	sigaction(SIGTERM, &action, NULL);
 
 	if (!(dpy = XOpenDisplay(NULL))) {
-		fprintf(stderr, "Failed to open display.\n");
+		fputs("Failed to open display.\n", stderr);
 		return 1;
 	}
 
