@@ -15,7 +15,7 @@ action=largest
 direction=below
 outputs=''
 
-# Default rotation rules for monitors. The format is 'eDP-1:normal DP-1:left'. 
+# Default rotation rules for monitors. The format is 'eDP-1:normal DP-1:left'.
 rotationrules=''
 
 # Fallback primary monitor (considered to be always connected).
@@ -26,7 +26,7 @@ internal=eDP-1
 rotmonitor=DP-1
 rotdirection=left
 
-# You may want to restart a compositor. Options can be specified after a space. 
+# You may want to restart a compositor. Options can be specified after a space.
 compositor=''
 
 # Special rules. The format is 'eDP-1 DP-1 ...'. Global rules are not applied 
