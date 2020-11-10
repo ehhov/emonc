@@ -8,7 +8,7 @@
 dash=--
 
 # Default command.
-action=largest
+action=auto
 
 # Default placement direction and order. Has to be fully typed (above, below, 
 # left-of, right-of).
