@@ -4,6 +4,7 @@ emonc \- monitor connection and configuration helper
 .SH SYNOPSIS
 .B emonc
 .RB [ \-l ]
+.RB [ \-k ]
 .RB [ \-c
 .IR compositor ]
 .RB [ \-d
@@ -47,9 +48,16 @@ Otherwise, a recursive reconfiguration may happen.
 run in a loop waiting for output change events (monitor connection or 
 manual reconfiguration).
 .TP
+.B \-k
+kill compositor, if any, instead of just checking for running compositor 
+processes. Should be used when the compositor doesn't replace its 
+existing process itself.
+.TP
 .BI \-c " compositor"
-specify a program to restart each time after applying configuration rules. Its 
-options can be specified after a space (within the same command line argument).
+specify a program to restart each time after applying configuration 
+rules. If the compositor is not running at the time of configuration, it 
+will not be started. Its options can be specified after a space (within 
+the same command line argument). See also the \fB\-k\fR option.
 .TP
 .BI \-d " direction"
 set a monitor alignment direction. The \fIdirection\fR can be either above, 

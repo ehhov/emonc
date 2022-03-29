@@ -46,7 +46,7 @@ configurespecial() {
 ###########################
 
 usage() {
-	echo "Usage: emonc [-l] [-c compositor] [-d above|below|left|right] [-i internal]"
+	echo "Usage: emonc [-l] [-k] [-c compositor] [-d above|below|left|right] [-i internal]"
 	echo "             [-o outputs] [-r rotationrules] [-s special] [-f configurespecial]"
 	echo "             [auto|primary|onlyprimary|largest|onlylargest|from output|only output]"
 	echo "       emonc rot [normal|left|right|inverted] [output]"
@@ -224,8 +224,7 @@ allmons() {
 		fi
 	done
 	if [ "${compositor%% *}" ]; then
-		if killall ${compositor%% *}; then
-			sleep .5 # give it some time to finish. Unfortunately, there is no way to wait.
+		if $killcompositor; then
 			nohup $compositor >/dev/null 2>&1 &
 		fi
 	fi
@@ -237,6 +236,7 @@ allmons() {
 ##############
 loop=''
 mon=''
+killcompositor=''
 while [ $# -gt 0 ]; do
 	arg="$1"; opt=''
 	case $1 in
@@ -276,6 +276,9 @@ while [ $# -gt 0 ]; do
 	;;
 	-l)
 		loop=1
+	;;
+	-k)
+		killcompositor=1
 	;;
 	-d)
 		case $2 in
@@ -344,6 +347,12 @@ done
 special=$(echo $special | sed 's/ {2,}/ /')
 lastmon=${special##* }
 outputs=$(getoutputs $outputs)
+if [ "$killcompositor" ]; then
+	killcompositor="killall ${compositor%% *} >/dev/null 2>&1 && sleep .5"
+	# Give compositor some time to finish. Unfortunately, there is no way to wait.
+else
+	killcompositor="pgrep -x ${compositor%% *} >/dev/null 2>&1"
+fi
 
 case $action in
 rot)
