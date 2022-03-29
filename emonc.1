@@ -1,4 +1,4 @@
-.TH EMONC 1 "August 2020" "version 0"
+.TH EMONC 1 "March 2022" "version 0"
 .SH NAME
 emonc \- monitor connection and configuration helper
 .SH SYNOPSIS
@@ -121,16 +121,16 @@ connected. Default values for \fIdirection\fR and \fIoutput\fR are hard-coded in
 this command.
 .TP
 \fBunrot\fR [\fIoutput\fR]
-set the normal rotation state for all monitors or \fIoutput\fR if specified. It is 
-enough to type \fBu\fR for this command.
+set the normal rotation state for all monitors or \fIoutput\fR, if specified. 
+It is enough to type \fBu\fR for this command.
 .TP
 \fBsetprimary\fR [\fIoutput\fR]
 set \fIoutput\fR as primary. If it is not valid and there was a primary 
-monitor, it is set again. If \fIoutput\fR is not specified or there was no 
-primary monitor, the fallback monitor is used. If there is no fallback monitor, 
-the first found connected monitor is set as primary and a log message is 
-printed. So after this command there will definitely be a primary monitor. It 
-is enough to type \fBs\fR for this command.
+monitor, that is set again. If \fIoutput\fR is not specified or is invalid and 
+there was no primary monitor, the fallback monitor is used. If there is no 
+fallback monitor, the first found connected monitor is set as primary and a log 
+message is printed. So after this command there will definitely be a primary 
+monitor. It is enough to type \fBs\fR for this command.
 .TP
 .B defaults
 show the default configuration. If your \'/bin/sh\' has a \'typeset\' command, 

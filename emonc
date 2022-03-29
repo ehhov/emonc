@@ -238,7 +238,6 @@ loop=''
 mon=''
 killcompositor=''
 while [ $# -gt 0 ]; do
-	arg="$1"; opt=''
 	case $1 in
 	r*)
 		action=rot
@@ -335,7 +334,7 @@ while [ $# -gt 0 ]; do
 done
 
 if [ "$internal" ] && ! isconn $internal; then
-	echo "Monitor '$internal' not connected. Fallback primary monitor is unset." >&2
+	echo "Monitor '$internal' not connected. Fallback primary monitor unset." >&2
 	internal=''
 fi
 for i in $special $outputs; do
@@ -390,8 +389,8 @@ setprimary)
 	fi
 ;;
 *)
-	for pid in $(pgrep -x emonc) $(pgrep -x waitmonc); do
-		if [ $pid -ne $$ ]; then
+	for pid in $(pgrep -x waitmonc) $(pgrep -x emonc); do
+		if [ $pid -ne $$ ] && ps -p $pid >/dev/null 2>&1; then
 			echo "Terminated $pid: '$(ps -p $pid -o 'cmd=')'." >&2
 			kill $pid
 		fi
